@@ -12,7 +12,7 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in
     {
-      nixosModules.steelwm = import ./home.nix { inherit pkgs nixpkgs; };
+      nixosModules.steelwm = ./module.nix;
       packages.${system} = rec {
         steelwm = pkgs.callPackage ./default.nix { };
         default = steelwm;
