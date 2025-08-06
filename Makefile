@@ -1,16 +1,16 @@
 include config.mk
 
-SRC = steelwm.c steelwm.c util.c
+SRC = ${wildcard src/*.c}
 OBJ = ${SRC:.c=.o}
 
 all: steelwm
 
-.c.o:
-	${CC} -c ${CFLAGS} $<
+src/%.o: src/%.c
+	${CC} -c ${CFLAGS} $< -o $@
 
-${OBJ}: config.h config.mk
+${OBJ}: src/config.h config.mk
 
-config.h:
+src/config.h:
 	cp config.def.h $@
 
 steelwm: ${OBJ}
@@ -21,8 +21,7 @@ clean:
 
 dist: clean
 	mkdir -p steelwm-${VERSION}
-	cp -R LICENSE Makefile README config.def.h config.mk\
-		steelwm.1 drw.h util.h ${SRC} transient.c steelwm-${VERSION}
+	cp -R COPYING Makefile README src/ steelwm-${VERSION}
 	tar -cf steelwm-${VERSION}.tar steelwm-${VERSION}
 	gzip steelwm-${VERSION}.tar
 	rm -rf steelwm-${VERSION}
