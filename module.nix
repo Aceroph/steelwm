@@ -12,7 +12,10 @@ in
 {
   options.xsession.windowManager.steelwm = {
     enable = lib.mkEnableOption "Enable SteelWM";
-    package = lib.mkPackageOption pkgs "steelwm" { extraDescription = "Package to use"; };
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.callPackage ./default.nix { inherit pkgs; };
+    };
   };
 
   config = lib.mkIf cfg.enable {
