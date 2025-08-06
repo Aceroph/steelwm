@@ -14,6 +14,7 @@
     {
       packages.${system} = rec {
         steelwm = pkgs.callPackage ./default.nix { };
+        home-manager = import ./home.nix { inherit pkgs; };
         default = steelwm;
       };
     };

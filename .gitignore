@@ -1,4 +1,5 @@
 .*/
 *.o
-steelwm
 result
+steelwm
+flake.lock
