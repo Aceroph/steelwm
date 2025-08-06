@@ -20,5 +20,7 @@ in
 
   config = lib.mkIf cfg.enable {
     home.packages = [ steelwm ];
+
+    xsession.windowManager.command = "${steelwm}/bin/steelwm";
   };
 }
