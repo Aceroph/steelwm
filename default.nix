@@ -7,8 +7,13 @@
 
 stdenv.mkDerivation {
   pname = "steelwm";
-  version = "1.0";
-  src = ./.;
+  version = "0.1";
+  src = pkgs.fetchFromGitHub {
+    owner = "aceroph";
+    repo = "steelwm";
+    rev = "9c1bcf997bbfd4696a4b888a2de28c50302f5327";
+    sha256 = "sha256-A28lPM6ci0JHsABRVS9UfHxSRirW9oRk/ZmOLqucnMY=";
+  };
 
   nativeBuildInputs = with pkgs; [
     xorg.libXinerama
