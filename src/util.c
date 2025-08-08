@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util.h"
+#include "include/util.h"
 
 void die(const char *fmt, ...) {
   va_list ap;

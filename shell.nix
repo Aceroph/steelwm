@@ -6,6 +6,7 @@ pkgs.mkShell {
     xorg.libXinerama
     xorg.libX11.dev
     xorg.libXft
+    tomlc99
   ];
 
   packages = with pkgs; [

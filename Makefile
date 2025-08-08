@@ -5,19 +5,14 @@ OBJ = ${SRC:.c=.o}
 
 all: steelwm
 
-src/%.o: src/%.c
-	${CC} -c ${CFLAGS} $< -o $@
-
-${OBJ}: src/config.h config.mk
-
-src/config.h:
-	cp config.def.h $@
+build/%.o: src/%.c
+	${CC} -c -g ${CFLAGS} $< -o $@
 
 steelwm: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
 clean:
-	rm -f steelwm ${OBJ} steelwm-${VERSION}.tar.gz
+	rm -f steelwm test build/*.o ${OBJ} steelwm-${VERSION}.tar.gz
 
 dist: clean
 	mkdir -p steelwm-${VERSION}

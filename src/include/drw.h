@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#ifndef DRW_H_
+#define DRW_H_
+
 #include "X11/Xft/Xft.h"
 
 typedef struct {
@@ -78,3 +81,5 @@ int drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h,
 /* Map functions */
 void drw_map(Drw *drw, Window win, int x, int y, unsigned int w,
              unsigned int h);
+
+#endif // DRW_H_

@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#ifndef UTIL_H_
+#define UTIL_H_
+
 #include <stdlib.h>
 
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
@@ -23,3 +26,5 @@
 
 void die(const char *fmt, ...);
 void *ecalloc(size_t nmemb, size_t size);
+
+#endif // UTIL_H_

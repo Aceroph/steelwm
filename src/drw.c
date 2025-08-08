@@ -20,8 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "drw.h"
-#include "util.h"
+#include "include/drw.h"
+#include "include/util.h"
 
 #define UTF_INVALID 0xFFFD
 
