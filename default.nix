@@ -11,8 +11,8 @@ stdenv.mkDerivation {
   src = pkgs.fetchFromGitHub {
     owner = "aceroph";
     repo = "steelwm";
-    rev = "9c1bcf997bbfd4696a4b888a2de28c50302f5327";
-    sha256 = "sha256-A28lPM6ci0JHsABRVS9UfHxSRirW9oRk/ZmOLqucnMY=";
+    rev = "d33267fc62a84d75028e667c8cd184764f20c5bc";
+    sha256 = "sha256-74btgds32SYD71Ba9Rya1eh3KqELkmFNwmySadc/vGY=";
   };
 
   nativeBuildInputs = with pkgs; [
