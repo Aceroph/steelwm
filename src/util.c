@@ -46,3 +46,24 @@ void *ecalloc(size_t nmemb, size_t size) {
     die("calloc:");
   return p;
 }
+
+SizedPtr *sizedptr_new() {
+  SizedPtr *szptr = calloc(1, sizeof(SizedPtr));
+  szptr->size = sizeof(SizedPtr);
+  return szptr;
+}
+
+void sizedptr_append(SizedPtr *ptr, const void *src) {
+  SizedPtr *newptr = realloc(ptr, (++ptr->size) * sizeof src);
+  if (newptr == NULL) {
+    die("failed to resize SizedPtr");
+  }
+  ptr = newptr;
+}
+
+void sizedptr_free(SizedPtr *ptr) {
+  if (ptr->ptr != NULL) {
+    free(ptr->ptr);
+    free(ptr);
+  }
+}
