@@ -41,23 +41,36 @@
 #include "include/steelwm.h"
 #include "include/util.h"
 
-extern SizedPtr *keybinds;
-extern SizedPtr *rules;
-extern SizedPtr *tags;
-extern SizedPtr *buttons;
-extern SizedPtr *fonts;
-extern SizedPtr *colors;
-extern SizedPtr *layouts;
+extern Key *keybinds;
+extern size_t keybinds_size;
+
+extern Rule *rules;
+extern size_t rules_size;
+
+extern char **tags;
+extern size_t tags_size;
+
+extern Button *buttons;
+extern size_t buttons_size;
 
 extern unsigned int borderpx;
 extern unsigned int snap;
 extern int showbar;
 extern int topbar;
 
+extern char **fonts;
+extern size_t fonts_size;
+
+extern char **colors;
+extern size_t colors_size;
+
 extern float mfact;
 extern int nmaster;
 extern int resizehints;
 extern int lockfullscreen;
+
+extern Layout *layouts;
+extern size_t layouts_size;
 
 /* variables */
 static const char broken[] = "broken";
@@ -107,8 +120,8 @@ void applyrules(Client *c) {
   wclass = ch.res_class ? ch.res_class : broken;
   instance = ch.res_name ? ch.res_name : broken;
 
-  for (i = 0; i < rules->size; i++) {
-    r = &((Rule *)rules->ptr)[i];
+  for (i = 0; i < rules_size; i++) {
+    r = &rules[i];
     if ((!r->title || strstr(c->name, r->title)) &&
         (!r->wclass || strstr(wclass, r->wclass)) &&
         (!r->instance || strstr(instance, r->instance))) {
@@ -124,8 +137,8 @@ void applyrules(Client *c) {
     XFree(ch.res_class);
   if (ch.res_name)
     XFree(ch.res_name);
-  c->tags = c->tags & TAGMASK(tags->size) ? c->tags & TAGMASK(tags->size)
-                                          : c->mon->tagset[c->mon->seltags];
+  c->tags = c->tags & TAGMASK(tags_size) ? c->tags & TAGMASK(tags_size)
+                                         : c->mon->tagset[c->mon->seltags];
 }
 
 int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact) {
@@ -241,9 +254,9 @@ void buttonpress(XEvent *e) {
   if (ev->window == selmon->barwin) {
     i = x = 0;
     do
-      x += TEXTW(((const char **)tags->ptr)[i]);
-    while (ev->x >= x && ++i < tags->size);
-    if (i < tags->size) {
+      x += TEXTW(tags[i]);
+    while (ev->x >= x && ++i < tags_size);
+    if (i < tags_size) {
       click = ClkTagBar;
       arg.ui = 1 << i;
     } else if (ev->x < x + TEXTW(selmon->ltsymbol))
@@ -258,12 +271,12 @@ void buttonpress(XEvent *e) {
     XAllowEvents(dpy, ReplayPointer, CurrentTime);
     click = ClkClientWin;
   }
-  for (i = 0; i < buttons->size; i++) {
-    Button button = ((Button *)buttons->ptr)[i];
-    if (click == button.click && button.func && button.button == ev->button &&
-        CLEANMASK(button.mask) == CLEANMASK(ev->state))
-      button.func(click == ClkTagBar && button.arg.i == 0 ? &arg : &button.arg);
-  }
+  for (i = 0; i < buttons_size; i++)
+    if (click == buttons[i].click && buttons[i].func &&
+        buttons[i].button == ev->button &&
+        CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
+      buttons[i].func(
+          click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
 }
 
 void checkotherwm(void) {
@@ -291,7 +304,7 @@ void cleanup(void) {
     cleanupmon(mons);
   for (i = 0; i < CurLast; i++)
     drw_cur_free(drw, cursor[i]);
-  for (i = 0; i < colors->size; i++)
+  for (i = 0; i < colors_size; i++)
     free(scheme[i]);
   free(scheme);
   XDestroyWindow(dpy, wmcheckwin);
@@ -430,7 +443,6 @@ void configurerequest(XEvent *e) {
 
 Monitor *createmon(void) {
   Monitor *m;
-  Layout *llayouts = ((Layout *)layouts->ptr);
 
   m = ecalloc(1, sizeof(Monitor));
   m->tagset[0] = m->tagset[1] = 1;
@@ -438,9 +450,9 @@ Monitor *createmon(void) {
   m->nmaster = nmaster;
   m->showbar = showbar;
   m->topbar = topbar;
-  m->lt[0] = &llayouts[0];
-  m->lt[1] = &llayouts[1];
-  strncpy(m->ltsymbol, llayouts[0].symbol, sizeof m->ltsymbol);
+  m->lt[0] = &layouts[0];
+  m->lt[1] = &layouts[1];
+  strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
   return m;
 }
 
@@ -512,12 +524,11 @@ void drawbar(Monitor *m) {
       urg |= c->tags;
   }
   x = 0;
-  for (i = 0; i < tags->size; i++) {
-    const char *tag = &((char *)tags->ptr)[i];
-    w = TEXTW(tag);
+  for (i = 0; i < tags_size; i++) {
+    w = TEXTW(tags[i]);
     drw_setscheme(
         drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
-    drw_text(drw, x, 0, w, bh, lrpad / 2, tag, urg & 1 << i);
+    drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
     if (occ & 1 << i)
       drw_rect(drw, x + boxs, boxs, boxw, boxw,
                m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
@@ -717,14 +728,12 @@ void grabbuttons(Client *c, int focused) {
     if (!focused)
       XGrabButton(dpy, AnyButton, AnyModifier, c->win, False, BUTTONMASK,
                   GrabModeSync, GrabModeSync, None, None);
-    for (i = 0; i < buttons->size; i++) {
-      Button button = ((Button *)buttons->ptr)[i];
-      if (button.click == ClkClientWin)
+    for (i = 0; i < buttons_size; i++)
+      if (buttons[i].click == ClkClientWin)
         for (j = 0; j < LENGTH(modifiers); j++)
-          XGrabButton(dpy, button.button, button.mask | modifiers[j], c->win,
-                      False, BUTTONMASK, GrabModeAsync, GrabModeSync, None,
-                      None);
-    }
+          XGrabButton(dpy, buttons[i].button, buttons[i].mask | modifiers[j],
+                      c->win, False, BUTTONMASK, GrabModeAsync, GrabModeSync,
+                      None, None);
   }
 }
 
@@ -743,15 +752,12 @@ void grabkeys(void) {
     if (!syms)
       return;
     for (k = start; k <= end; k++)
-      for (i = 0; i < keybinds->size; i++) {
-        Key keybind = ((Key *)keybinds->ptr)[i];
+      for (i = 0; i < keybinds_size; i++)
         /* skip modifier codes, we do that ourselves */
-        if (keybind.keysym == syms[(k - start) * skip])
+        if (keybinds[i].keysym == syms[(k - start) * skip])
           for (j = 0; j < LENGTH(modifiers); j++)
-            XGrabKey(dpy, k, keybind.mod | modifiers[j], root, True,
+            XGrabKey(dpy, k, keybinds[i].mod | modifiers[j], root, True,
                      GrabModeAsync, GrabModeAsync);
-      }
-
     XFree(syms);
   }
 }
@@ -779,12 +785,10 @@ void keypress(XEvent *e) {
 
   ev = &e->xkey;
   keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
-  for (i = 0; i < keybinds->size; i++) {
-    Key keybind = ((Key *)keybinds->ptr)[i];
-    if (keysym == keybind.keysym &&
-        CLEANMASK(keybind.mod) == CLEANMASK(ev->state) && keybind.func)
-      keybind.func(&(keybind.arg));
-  }
+  for (i = 0; i < keybinds_size; i++)
+    if (keysym == keybinds[i].keysym &&
+        CLEANMASK(keybinds[i].mod) == CLEANMASK(ev->state) && keybinds[i].func)
+      keybinds[i].func(&(keybinds[i].arg));
 }
 
 void killclient(const Arg *arg) {
@@ -1297,7 +1301,7 @@ void setup(void) {
   sh = DisplayHeight(dpy, screen);
   root = RootWindow(dpy, screen);
   drw = drw_create(dpy, screen, root, sw, sh);
-  if (!drw_fontset_create(drw, (const char **)fonts->ptr, fonts->size))
+  if (!drw_fontset_create(drw, (const char **)fonts, fonts_size))
     die("no fonts could be loaded.");
   lrpad = drw->fonts->h;
   bh = drw->fonts->h + 2;
@@ -1324,9 +1328,9 @@ void setup(void) {
   cursor[CurResize] = drw_cur_create(drw, XC_sizing);
   cursor[CurMove] = drw_cur_create(drw, XC_fleur);
   /* init appearance */
-  scheme = ecalloc(colors->size, sizeof(Clr *));
-  for (i = 0; i < colors->size; i++)
-    scheme[i] = drw_scm_create(drw, &((const char **)colors->ptr)[i], 3);
+  scheme = ecalloc(colors_size, sizeof(Clr *));
+  for (i = 0; i < colors_size; i++)
+    scheme[i] = drw_scm_create(drw, (const char **)colors[i], 3);
   /* init bars */
   updatebars();
   updatestatus();
@@ -1403,8 +1407,8 @@ void spawn(const Arg *arg) {
 }
 
 void tag(const Arg *arg) {
-  if (selmon->sel && arg->ui & TAGMASK(tags->size)) {
-    selmon->sel->tags = arg->ui & TAGMASK(tags->size);
+  if (selmon->sel && arg->ui & TAGMASK(tags_size)) {
+    selmon->sel->tags = arg->ui & TAGMASK(tags_size);
     focus(NULL);
     arrange(selmon);
   }
@@ -1470,7 +1474,7 @@ void toggletag(const Arg *arg) {
 
   if (!selmon->sel)
     return;
-  newtags = selmon->sel->tags ^ (arg->ui & TAGMASK(tags->size));
+  newtags = selmon->sel->tags ^ (arg->ui & TAGMASK(tags_size));
   if (newtags) {
     selmon->sel->tags = newtags;
     focus(NULL);
@@ -1480,7 +1484,7 @@ void toggletag(const Arg *arg) {
 
 void toggleview(const Arg *arg) {
   unsigned int newtagset =
-      selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK(tags->size));
+      selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK(tags_size));
 
   if (newtagset) {
     selmon->tagset[selmon->seltags] = newtagset;
@@ -1751,11 +1755,11 @@ void updatewmhints(Client *c) {
 }
 
 void view(const Arg *arg) {
-  if ((arg->ui & TAGMASK(tags->size)) == selmon->tagset[selmon->seltags])
+  if ((arg->ui & TAGMASK(tags_size)) == selmon->tagset[selmon->seltags])
     return;
   selmon->seltags ^= 1; /* toggle sel tagset */
-  if (arg->ui & TAGMASK(tags->size))
-    selmon->tagset[selmon->seltags] = arg->ui & TAGMASK(tags->size);
+  if (arg->ui & TAGMASK(tags_size))
+    selmon->tagset[selmon->seltags] = arg->ui & TAGMASK(tags_size);
   focus(NULL);
   arrange(selmon);
 }

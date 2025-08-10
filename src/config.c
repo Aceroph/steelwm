@@ -30,25 +30,37 @@
 #include "include/util.h"
 
 toml_table_t *config;
+Key *keybinds = NULL;
+size_t keybinds_size = 0;
 
-SizedPtr *keybinds;
-SizedPtr *rules;
-SizedPtr *tags;
-SizedPtr *buttons;
-SizedPtr *fonts;
-SizedPtr *colors;
-SizedPtr *layouts;
+Rule *rules = NULL;
+size_t rules_size = 0;
+
+char **tags = NULL;
+size_t tags_size = 0;
+
+Button *buttons = NULL;
+size_t buttons_size = 0;
 
 unsigned int borderpx = 1; /* border pixel of windows */
 unsigned int snap = 32;    /* snap pixel */
 int showbar = 1;           /* 0 means no bar */
 int topbar = 1;            /* 0 means bottom bar */
 
+char **fonts = NULL;
+size_t fonts_size = 0;
+
+char **colors = NULL;
+size_t colors_size;
+
 /* layout(s) */
 float mfact = 0.55;     /* factor of master area size [0.05..0.95]*/
 int nmaster = 1;        /* number of clients in master area */
 int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
+
+Layout *layouts = NULL;
+size_t layouts_size = 0;
 
 // private function definitions
 KeySym map_key(const char *keybind);

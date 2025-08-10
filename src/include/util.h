@@ -24,16 +24,7 @@
 #define BETWEEN(X, A, B) ((A) <= (X) && (X) <= (B))
 #define LENGTH(X) (sizeof(X) / sizeof(X)[0])
 
-typedef struct {
-  void *ptr;
-  size_t size;
-} SizedPtr;
-
 void die(const char *fmt, ...);
 void *ecalloc(size_t nmemb, size_t size);
-
-SizedPtr *sizedptr_new();
-void sizedptr_append(SizedPtr *ptr, const void *src);
-void sizedptr_free(SizedPtr *ptr);
 
 #endif // UTIL_H_
