@@ -1,22 +1,22 @@
 include config.mk
 
-SRC = ${wildcard src/*.c}
+SRC = ${wildcard steelwm/*.c}
 OBJ = ${SRC:.c=.o}
 
 all: steelwm
 
-build/%.o: src/%.c
+build/%.o: steelwm/%.c
 	${CC} -c -g ${CFLAGS} $< -o $@
 
 steelwm: ${OBJ}
-	${CC} -o $@ ${OBJ} ${LDFLAGS}
+	${CC} -o build/$@ ${OBJ} ${LDFLAGS}
 
 clean:
-	rm -f steelwm test build/*.o ${OBJ} steelwm-${VERSION}.tar.gz
+	rm -f build/steelwm build/*.o ${OBJ} steelwm-${VERSION}.tar.gz
 
 dist: clean
 	mkdir -p steelwm-${VERSION}
-	cp -R COPYING Makefile README src/ steelwm-${VERSION}
+	cp -R COPYING Makefile README steelwm/ steelwm-${VERSION}
 	tar -cf steelwm-${VERSION}.tar steelwm-${VERSION}
 	gzip steelwm-${VERSION}.tar
 	rm -rf steelwm-${VERSION}
