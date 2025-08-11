@@ -40,37 +40,25 @@
 #include "include/drw.h"
 #include "include/steelwm.h"
 #include "include/util.h"
+#include "include/vector.h"
 
-extern Key *keybinds;
-extern size_t keybinds_size;
-
-extern Rule *rules;
-extern size_t rules_size;
-
-extern char **tags;
-extern size_t tags_size;
-
-extern Button *buttons;
-extern size_t buttons_size;
+extern cvector_vector_type(Key) keybinds;
+extern cvector_vector_type(Rule) rules;
+extern cvector_vector_type(char *) tags;
+extern cvector_vector_type(Button) buttons;
+extern cvector_vector_type(char *) fonts;
+extern cvector_vector_type(char *) colors;
+extern cvector_vector_type(Layout) layouts;
 
 extern unsigned int borderpx;
 extern unsigned int snap;
 extern int showbar;
 extern int topbar;
 
-extern char **fonts;
-extern size_t fonts_size;
-
-extern char **colors;
-extern size_t colors_size;
-
 extern float mfact;
 extern int nmaster;
 extern int resizehints;
 extern int lockfullscreen;
-
-extern Layout *layouts;
-extern size_t layouts_size;
 
 /* variables */
 static const char broken[] = "broken";
@@ -120,7 +108,7 @@ void applyrules(Client *c) {
   wclass = ch.res_class ? ch.res_class : broken;
   instance = ch.res_name ? ch.res_name : broken;
 
-  for (i = 0; i < rules_size; i++) {
+  for (i = 0; i < cvector_size(rules); i++) {
     r = &rules[i];
     if ((!r->title || strstr(c->name, r->title)) &&
         (!r->wclass || strstr(wclass, r->wclass)) &&
@@ -137,8 +125,9 @@ void applyrules(Client *c) {
     XFree(ch.res_class);
   if (ch.res_name)
     XFree(ch.res_name);
-  c->tags = c->tags & TAGMASK(tags_size) ? c->tags & TAGMASK(tags_size)
-                                         : c->mon->tagset[c->mon->seltags];
+  c->tags = c->tags & TAGMASK(cvector_size(tags))
+                ? c->tags & TAGMASK(cvector_size(tags))
+                : c->mon->tagset[c->mon->seltags];
 }
 
 int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact) {
@@ -255,8 +244,8 @@ void buttonpress(XEvent *e) {
     i = x = 0;
     do
       x += TEXTW(tags[i]);
-    while (ev->x >= x && ++i < tags_size);
-    if (i < tags_size) {
+    while (ev->x >= x && ++i < cvector_size(tags));
+    if (i < cvector_size(tags)) {
       click = ClkTagBar;
       arg.ui = 1 << i;
     } else if (ev->x < x + TEXTW(selmon->ltsymbol))
@@ -271,7 +260,7 @@ void buttonpress(XEvent *e) {
     XAllowEvents(dpy, ReplayPointer, CurrentTime);
     click = ClkClientWin;
   }
-  for (i = 0; i < buttons_size; i++)
+  for (i = 0; i < cvector_size(buttons); i++)
     if (click == buttons[i].click && buttons[i].func &&
         buttons[i].button == ev->button &&
         CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
@@ -304,7 +293,7 @@ void cleanup(void) {
     cleanupmon(mons);
   for (i = 0; i < CurLast; i++)
     drw_cur_free(drw, cursor[i]);
-  for (i = 0; i < colors_size; i++)
+  for (i = 0; i < cvector_size(colors); i++)
     free(scheme[i]);
   free(scheme);
   XDestroyWindow(dpy, wmcheckwin);
@@ -524,7 +513,7 @@ void drawbar(Monitor *m) {
       urg |= c->tags;
   }
   x = 0;
-  for (i = 0; i < tags_size; i++) {
+  for (i = 0; i < cvector_size(tags); i++) {
     w = TEXTW(tags[i]);
     drw_setscheme(
         drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
@@ -728,7 +717,7 @@ void grabbuttons(Client *c, int focused) {
     if (!focused)
       XGrabButton(dpy, AnyButton, AnyModifier, c->win, False, BUTTONMASK,
                   GrabModeSync, GrabModeSync, None, None);
-    for (i = 0; i < buttons_size; i++)
+    for (i = 0; i < cvector_size(buttons); i++)
       if (buttons[i].click == ClkClientWin)
         for (j = 0; j < LENGTH(modifiers); j++)
           XGrabButton(dpy, buttons[i].button, buttons[i].mask | modifiers[j],
@@ -752,7 +741,7 @@ void grabkeys(void) {
     if (!syms)
       return;
     for (k = start; k <= end; k++)
-      for (i = 0; i < keybinds_size; i++)
+      for (i = 0; i < cvector_size(keybinds); i++)
         /* skip modifier codes, we do that ourselves */
         if (keybinds[i].keysym == syms[(k - start) * skip])
           for (j = 0; j < LENGTH(modifiers); j++)
@@ -785,7 +774,7 @@ void keypress(XEvent *e) {
 
   ev = &e->xkey;
   keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
-  for (i = 0; i < keybinds_size; i++)
+  for (i = 0; i < cvector_size(keybinds); i++)
     if (keysym == keybinds[i].keysym &&
         CLEANMASK(keybinds[i].mod) == CLEANMASK(ev->state) && keybinds[i].func)
       keybinds[i].func(&(keybinds[i].arg));
@@ -1301,7 +1290,7 @@ void setup(void) {
   sh = DisplayHeight(dpy, screen);
   root = RootWindow(dpy, screen);
   drw = drw_create(dpy, screen, root, sw, sh);
-  if (!drw_fontset_create(drw, (const char **)fonts, fonts_size))
+  if (!drw_fontset_create(drw, (const char **)fonts, cvector_size(fonts)))
     die("no fonts could be loaded.");
   lrpad = drw->fonts->h;
   bh = drw->fonts->h + 2;
@@ -1328,8 +1317,8 @@ void setup(void) {
   cursor[CurResize] = drw_cur_create(drw, XC_sizing);
   cursor[CurMove] = drw_cur_create(drw, XC_fleur);
   /* init appearance */
-  scheme = ecalloc(colors_size, sizeof(Clr *));
-  for (i = 0; i < colors_size; i++)
+  scheme = ecalloc(cvector_size(colors), sizeof(Clr *));
+  for (i = 0; i < cvector_size(colors); i++)
     scheme[i] = drw_scm_create(drw, (const char **)colors[i], 3);
   /* init bars */
   updatebars();
@@ -1407,8 +1396,8 @@ void spawn(const Arg *arg) {
 }
 
 void tag(const Arg *arg) {
-  if (selmon->sel && arg->ui & TAGMASK(tags_size)) {
-    selmon->sel->tags = arg->ui & TAGMASK(tags_size);
+  if (selmon->sel && arg->ui & TAGMASK(cvector_size(tags))) {
+    selmon->sel->tags = arg->ui & TAGMASK(cvector_size(tags));
     focus(NULL);
     arrange(selmon);
   }
@@ -1474,7 +1463,7 @@ void toggletag(const Arg *arg) {
 
   if (!selmon->sel)
     return;
-  newtags = selmon->sel->tags ^ (arg->ui & TAGMASK(tags_size));
+  newtags = selmon->sel->tags ^ (arg->ui & TAGMASK(cvector_size(tags)));
   if (newtags) {
     selmon->sel->tags = newtags;
     focus(NULL);
@@ -1484,7 +1473,7 @@ void toggletag(const Arg *arg) {
 
 void toggleview(const Arg *arg) {
   unsigned int newtagset =
-      selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK(tags_size));
+      selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK(cvector_size(tags)));
 
   if (newtagset) {
     selmon->tagset[selmon->seltags] = newtagset;
@@ -1755,11 +1744,12 @@ void updatewmhints(Client *c) {
 }
 
 void view(const Arg *arg) {
-  if ((arg->ui & TAGMASK(tags_size)) == selmon->tagset[selmon->seltags])
+  if ((arg->ui & TAGMASK(cvector_size(tags))) ==
+      selmon->tagset[selmon->seltags])
     return;
   selmon->seltags ^= 1; /* toggle sel tagset */
-  if (arg->ui & TAGMASK(tags_size))
-    selmon->tagset[selmon->seltags] = arg->ui & TAGMASK(tags_size);
+  if (arg->ui & TAGMASK(cvector_size(tags)))
+    selmon->tagset[selmon->seltags] = arg->ui & TAGMASK(cvector_size(tags));
   focus(NULL);
   arrange(selmon);
 }

@@ -28,39 +28,28 @@
 #include "include/config.h"
 #include "include/steelwm.h"
 #include "include/util.h"
+#include "include/vector.h"
 
 toml_table_t *config;
-Key *keybinds = NULL;
-size_t keybinds_size = 0;
 
-Rule *rules = NULL;
-size_t rules_size = 0;
-
-char **tags = NULL;
-size_t tags_size = 0;
-
-Button *buttons = NULL;
-size_t buttons_size = 0;
+cvector_vector_type(Key) keybinds = NULL;
+cvector_vector_type(Rule) rules = NULL;
+cvector_vector_type(char *) tags = NULL;
+cvector_vector_type(Button) buttons = NULL;
+cvector_vector_type(char *) colors = NULL;
+cvector_vector_type(char *) fonts = NULL;
+cvector_vector_type(Layout) layouts = NULL;
 
 unsigned int borderpx = 1; /* border pixel of windows */
 unsigned int snap = 32;    /* snap pixel */
 int showbar = 1;           /* 0 means no bar */
 int topbar = 1;            /* 0 means bottom bar */
 
-char **fonts = NULL;
-size_t fonts_size = 0;
-
-char **colors = NULL;
-size_t colors_size;
-
 /* layout(s) */
 float mfact = 0.55;     /* factor of master area size [0.05..0.95]*/
 int nmaster = 1;        /* number of clients in master area */
 int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
-
-Layout *layouts = NULL;
-size_t layouts_size = 0;
 
 // private function definitions
 KeySym map_key(const char *keybind);
@@ -97,7 +86,6 @@ void config_get_keybinds() {
     die("no keybinds defined in configuration");
   }
 
-  keybinds = calloc(0, sizeof(Key));
   for (int i = 0;; i++) {
     char *keybind_name = (char *)toml_key_in(keybinds_config, i);
     if (!keybind_name)
@@ -118,18 +106,13 @@ void config_get_keybinds() {
       arg = strtok(NULL, " ");
     }
 
-    Key *newkeybinds = realloc(keybinds, sizeof(Key) * (i + 1));
-    if (newkeybinds == NULL) {
-      die("failed to allocate more memory for keybindings");
-    }
-    keybinds = newkeybinds;
-
     unsigned int modkey = get_modkey(keybind_name);
     KeySym key = map_key(keybind_name);
     void (*function)(const Arg *) = map_function(function_name);
 
     // TODO: Map args to type
-    keybinds[i] = (Key){modkey, key, function, {.v = args}};
+    Key keybind = (Key){modkey, key, function, {.v = args}};
+    cvector_push_back(keybinds, keybind);
   }
 }
 
