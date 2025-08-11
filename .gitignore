@@ -1,5 +1,5 @@
 .*/
 *.o
 result
-steelwm
+build
 flake.lock

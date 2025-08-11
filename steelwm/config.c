@@ -25,6 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "../common/include/common.h"
 #include "include/config.h"
 #include "include/steelwm.h"
 #include "include/util.h"
@@ -50,11 +51,6 @@ float mfact = 0.55;     /* factor of master area size [0.05..0.95]*/
 int nmaster = 1;        /* number of clients in master area */
 int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
-
-// private function definitions
-KeySym map_key(const char *keybind);
-unsigned int get_modkey(char *keybind);
-void (*map_function(const char *function))(const Arg *arg);
 
 void config_load() {
   char configpath[256];
@@ -106,7 +102,7 @@ void config_get_keybinds() {
       arg = strtok(NULL, " ");
     }
 
-    unsigned int modkey = get_modkey(keybind_name);
+    unsigned int modkey = map_modkey(keybind_name);
     KeySym key = map_key(keybind_name);
     void (*function)(const Arg *) = map_function(function_name);
 
@@ -179,7 +175,6 @@ unsigned int get_modkey(char *keybind) {
 }
 
 void (*map_function(const char *function))(const Arg *arg) {
-  printf("funcname: %s\n", function);
   if (!strcasecmp(function, "spawn")) {
     return spawn;
   }
