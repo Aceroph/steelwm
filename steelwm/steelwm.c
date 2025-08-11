@@ -36,6 +36,7 @@
 #endif /* XINERAMA */
 #include <X11/Xft/Xft.h>
 
+#include "../common/include/common.h"
 #include "include/config.h"
 #include "include/drw.h"
 #include "include/steelwm.h"

@@ -1,6 +1,6 @@
 include config.mk
 
-SRC = ${wildcard steelwm/*.c}
+SRC = ${wildcard steelwm/*.c} common/common.c
 OBJ = ${SRC:.c=.o}
 
 all: steelwm

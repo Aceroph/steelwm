@@ -15,7 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "X11/X.h"
-#include "strings.h"
 #include "toml.h"
 #include <X11/keysym.h>
 #include <pwd.h>
@@ -28,7 +27,6 @@
 #include "../common/include/common.h"
 #include "include/config.h"
 #include "include/steelwm.h"
-#include "include/util.h"
 #include "include/vector.h"
 
 toml_table_t *config;
@@ -52,6 +50,10 @@ int nmaster = 1;        /* number of clients in master area */
 int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 
+void (*map_function(enum COMMAND_TYPE command_type))(const Arg *arg);
+void config_get_keybinds();
+void config_get_tags();
+
 void config_load() {
   char configpath[256];
   char errbuf[200];
@@ -74,6 +76,9 @@ void config_load() {
   if (!config) {
     die("failed to parse config: %s", errbuf);
   }
+
+  config_get_keybinds();
+  config_get_tags();
 }
 
 void config_get_keybinds() {
@@ -89,22 +94,17 @@ void config_get_keybinds() {
     toml_datum_t bind = toml_string_in(keybinds_config, keybind_name);
     const char *function_name = strtok(bind.u.s, " ");
 
-    int j = 0;
-    char **args = calloc(j, sizeof(char *));
-    char *arg = strtok(NULL, " ");
-    while (arg != NULL) {
-      char **newargs = realloc(args, sizeof(char *) * ++j);
-      if (newargs == NULL) {
-        die("failed to allocate more memory for keybind arguments");
-      }
-      args = newargs;
-      args[j] = arg;
+    cvector_vector_type(char *) args = NULL;
+    char *arg;
+    do {
       arg = strtok(NULL, " ");
-    }
+      cvector_push_back(args, arg);
+    } while (arg != NULL);
 
     unsigned int modkey = map_modkey(keybind_name);
     KeySym key = map_key(keybind_name);
-    void (*function)(const Arg *) = map_function(function_name);
+    void (*function)(const Arg *) =
+        map_function(map_command_type(function_name));
 
     // TODO: Map args to type
     Key keybind = (Key){modkey, key, function, {.v = args}};
@@ -112,129 +112,64 @@ void config_get_keybinds() {
   }
 }
 
-KeySym map_key(const char *keybind) {
-  if (keybind == NULL) {
-    die("missing keybind");
-  }
-
-  if (!strcasecmp(keybind, "space")) {
-    return XK_space;
-  }
-  if (!strcasecmp(keybind, "enter") || !strcasecmp(keybind, "return")) {
-    return XK_Return;
-  }
-  if (!strcasecmp(keybind, "delete"))
-    return XK_Delete;
-  if (!strcasecmp(keybind, "print")) {
-    return XK_Print;
-  }
-
-  if (strlen(keybind) == 1) {
-    int ascii = (int)keybind[0];
-    if ((21 <= ascii && ascii <= 64) || (91 <= ascii && ascii <= 126)) {
-      return ascii;
+void config_get_tags() {
+  toml_array_t *tags_config = toml_array_in(config, "workspaces");
+  if (tags_config) {
+    for (int i = 0;; i++) {
+      toml_datum_t tag = toml_string_at(tags_config, i);
+      if (!tag.ok)
+        break;
+      cvector_push_back(tags, tag.u.s);
     }
+  } else {
+    cvector_push_back(tags, "1");
+    cvector_push_back(tags, "2");
+    cvector_push_back(tags, "3");
+    cvector_push_back(tags, "4");
+    cvector_push_back(tags, "5");
+    cvector_push_back(tags, "6");
+    cvector_push_back(tags, "7");
+    cvector_push_back(tags, "8");
+    cvector_push_back(tags, "9");
   }
-
-  die("invalid keybind %s", keybind);
-  return 0;
 }
 
-unsigned int get_modkey(char *keybind) {
-  unsigned int mod = 0;
-  unsigned int shift = 0;
-  unsigned int ctrl = 0;
-
-  char *nonmodkey = NULL;
-
-  char *key_t = strtok(keybind, "+");
-  while (key_t != NULL) {
-    if (!strcasecmp(key_t, "mod1") || !strcasecmp(key_t, "alt"))
-      mod = Mod1Mask;
-    else if (!strcasecmp(key_t, "mod2") || !strcasecmp(key_t, "numlock"))
-      mod = Mod2Mask;
-    else if (!strcasecmp(key_t, "mod3"))
-      mod = Mod3Mask;
-    else if (!strcasecmp(key_t, "mod4") || !strcasecmp(key_t, "super"))
-      mod = Mod4Mask;
-    else if (!strcasecmp(key_t, "mod5") || !strcasecmp(key_t, "altgr"))
-      mod = Mod5Mask;
-    else if (!strcasecmp(key_t, "shift"))
-      shift = ShiftMask;
-    else if (!strcasecmp(key_t, "control") || !strcasecmp(key_t, "ctrl"))
-      ctrl = ControlMask;
-    else
-      nonmodkey = key_t;
-    key_t = strtok(NULL, "+");
-  }
-  size_t size = strlen(nonmodkey);
-  memcpy(keybind, nonmodkey, size);
-  keybind[size] = '\0';
-
-  return mod | shift | ctrl;
-}
-
-void (*map_function(const char *function))(const Arg *arg) {
-  if (!strcasecmp(function, "spawn")) {
+void (*map_function(enum COMMAND_TYPE command_type))(const Arg *arg) {
+  switch (command_type) {
+  case SPAWN:
     return spawn;
-  }
-  if (!strcasecmp(function, "workspace")) {
-    return focusstack;
-  }
-  if (!strcasecmp(function, "incnmaster")) {
-    return incnmaster;
-  }
-  if (!strcasecmp(function, "setmfact")) {
-    return setmfact;
-  }
-  if (!strcasecmp(function, "zoom")) {
-    return zoom;
-  }
-  if (!strcasecmp(function, "view")) {
-    return view;
-  }
-  if (!strcasecmp(function, "kill")) {
-    return killclient;
-  }
-  if (!strcasecmp(function, "layout")) {
-    return setlayout;
-  }
-  if (!strcasecmp(function, "toggle_floating")) {
-    return togglefloating;
-  }
-  if (!strcasecmp(function, "tag")) {
+  case WORKSPACE:
     return tag;
-  }
-  if (!strcasecmp(function, "monitor")) {
+  case INCNMASTER:
+    return incnmaster;
+  case SETMFACT:
+    return setmfact;
+  case ZOOM:
+    return zoom;
+  case VIEW:
+    return view;
+  case KILL:
+    return killclient;
+  case LAYOUT:
+    return setlayout;
+  case FLOATING:
+    return togglefloating;
+  case WINDOW:
+    return focusstack;
+  case TAGMON:
+    return tagmon;
+  case QUIT:
+    return quit;
+  case MONITOR:
     return focusmon;
   }
-  if (!strcasecmp(function, "tag_monitor")) {
-    return tagmon;
-  }
-  if (!strcasecmp(function, "quit")) {
-    return quit;
-  }
-
-  die("unknown function %s", function);
 }
 
 int main() {
   config_load();
 
-  config_get_keybinds();
-  Key cmp = keybinds[0];
-  Key test = {Mod1Mask, XK_Print, spawn, {.v = {"flameshot", NULL}}};
-  if (test.mod == cmp.mod) {
-    printf("same modkey\n");
-  }
-  if (test.keysym == cmp.keysym) {
-    printf("same key\n");
-  }
-  if (test.func == cmp.func) {
-    printf("same function\n");
-  }
-  if (test.arg.v == cmp.arg.v) {
-    printf("same args\n");
+  for (int i = 0; i < cvector_size(tags); i++) {
+    printf("%d: %s\n", i, tags[i]);
   }
 
   toml_free(config);

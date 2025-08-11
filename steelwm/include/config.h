@@ -18,7 +18,6 @@
 #define CONFIG_H_
 
 void config_load();
-void config_get_keybinds();
 
 ///* appearance */
 // static const unsigned int borderpx = 1; /* border pixel of windows */

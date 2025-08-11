@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/include/common.h"
 #include "include/drw.h"
 #include "include/util.h"
 
