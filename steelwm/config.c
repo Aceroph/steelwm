@@ -35,8 +35,8 @@ cvector_vector_type(Key) keybinds = NULL;
 cvector_vector_type(Rule) rules = NULL;
 cvector_vector_type(char *) tags = NULL;
 cvector_vector_type(Button) buttons = NULL;
-cvector_vector_type(char *) colors = NULL;
-cvector_vector_type(char *) fonts = NULL;
+cvector_vector_type(char **) colors = NULL;
+cvector_vector_type(char **) fonts = NULL;
 cvector_vector_type(Layout) layouts = NULL;
 
 unsigned int borderpx = 1; /* border pixel of windows */
@@ -50,10 +50,16 @@ int nmaster = 1;        /* number of clients in master area */
 int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 
+// Private functions
 void (*map_function(enum COMMAND_TYPE command_type))(const Arg *arg);
 void config_get_keybinds();
 void config_get_tags();
+void config_get_fonts();
+void config_get_windows();
+cvector_vector_type(char *) get_default_unfocused_window_colors();
+cvector_vector_type(char *) get_default_focused_window_colors();
 
+// Function definitions
 void config_load() {
   char configpath[256];
   char errbuf[200];
@@ -79,6 +85,7 @@ void config_load() {
 
   config_get_keybinds();
   config_get_tags();
+  config_get_windows();
 }
 
 void config_get_keybinds() {
@@ -134,6 +141,78 @@ void config_get_tags() {
   }
 }
 
+cvector_vector_type(char *) get_default_unfocused_window_colors() {
+  cvector_vector_type(char *) unfocused_colors = NULL;
+  cvector_push_back(unfocused_colors, "#bbbbbb");
+  cvector_push_back(unfocused_colors, "#222222");
+  cvector_push_back(unfocused_colors, "#444444");
+  return unfocused_colors;
+}
+
+cvector_vector_type(char *) get_default_focused_window_colors() {
+  cvector_vector_type(char *) focused_colors = NULL;
+  cvector_push_back(focused_colors, "#eeeeee");
+  cvector_push_back(focused_colors, "#005577");
+  cvector_push_back(focused_colors, "#005577");
+  return focused_colors;
+}
+
+void config_get_windows() {
+  cvector_vector_type(char *) foc_colors = NULL;
+  cvector_vector_type(char *) unfoc_colors = NULL;
+
+  toml_table_t *windows_config = toml_table_in(config, "windows");
+  // [windows]
+  if (windows_config != NULL) {
+    toml_table_t *colors_config = toml_table_in(windows_config, "colors");
+
+    // [windows.colors]
+    if (colors_config != NULL) {
+      toml_array_t *foc_colors_arr = toml_array_in(colors_config, "focused");
+      // [windows.colors.focused]
+      if (foc_colors_arr != NULL) {
+        for (int i = 0; i < 3; i++) {
+          toml_datum_t color = toml_string_at(foc_colors_arr, i);
+          if (!color.ok) {
+            die("invalid color at position %d in windows.colors");
+          }
+          cvector_push_back(foc_colors, color.u.s);
+        }
+      } else {
+        // Default [windows.colors.focused]
+        foc_colors = get_default_focused_window_colors();
+      }
+
+      toml_array_t *unfoc_colors_arr =
+          toml_array_in(colors_config, "unfocused");
+      // [windows.colors.unfocused]
+      if (unfoc_colors_arr != NULL) {
+        for (int i = 0; i < 3; i++) {
+          toml_datum_t color = toml_string_at(unfoc_colors_arr, i);
+          if (!color.ok) {
+            die("invalid color at position %d in windows.colors");
+          }
+          cvector_push_back(foc_colors, color.u.s);
+        }
+      } else {
+        // Default [windows.colors.unfocused]
+        unfoc_colors = get_default_unfocused_window_colors();
+      }
+    } else {
+      // Default [windows.colors]
+      foc_colors = get_default_focused_window_colors();
+      unfoc_colors = get_default_unfocused_window_colors();
+    }
+  } else {
+    // Default [windows]
+    foc_colors = get_default_focused_window_colors();
+    unfoc_colors = get_default_unfocused_window_colors();
+  }
+
+  cvector_push_back(colors, unfoc_colors);
+  cvector_push_back(colors, foc_colors);
+}
+
 void (*map_function(enum COMMAND_TYPE command_type))(const Arg *arg) {
   switch (command_type) {
   case SPAWN:
@@ -168,8 +247,10 @@ void (*map_function(enum COMMAND_TYPE command_type))(const Arg *arg) {
 int main() {
   config_load();
 
-  for (int i = 0; i < cvector_size(tags); i++) {
-    printf("%d: %s\n", i, tags[i]);
+  for (int i = 0; i < cvector_size(colors); i++) {
+    for (int j = 0; j < cvector_size(colors[i]); j++) {
+      printf("%s\n", colors[i][j]);
+    }
   }
 
   toml_free(config);
