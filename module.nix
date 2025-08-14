@@ -6,7 +6,7 @@
 }:
 
 let
-  cfg = config.xsession.windowManager.steelwm;
+  cfg = config.services.xserver.windowManager.steelwm;
 in
 {
   options.xsession.windowManager.steelwm = {
