@@ -9,7 +9,7 @@ let
   cfg = config.services.xserver.windowManager.steelwm;
 in
 {
-  options.xsession.windowManager.steelwm = {
+  options.services.xserver.windowManager.steelwm = {
     enable = lib.mkEnableOption "Enable SteelWM";
     package = lib.mkOption {
       type = lib.types.package;
