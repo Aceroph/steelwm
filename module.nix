@@ -7,7 +7,6 @@
 
 let
   cfg = config.xsession.windowManager.steelwm;
-  steelwm = cfg.package;
 in
 {
   options.xsession.windowManager.steelwm = {
@@ -19,8 +18,15 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ steelwm ];
+    services.xserver.windowManager.session = lib.singleton {
+      name = "steelwm";
+      start = ''
+        export _JAVA_AWT_WM_NONREPARENTING=1
+        steelwm &
+        waitPID=$!
+      '';
+    };
 
-    xsession.windowManager.command = "${steelwm}/bin/steelwm";
+    environment.systemPackages = [ cfg.package ];
   };
 }
